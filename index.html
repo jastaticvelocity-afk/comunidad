@@ -31,19 +31,9 @@ input, button {
 
 <h1>🔥 Comunidad Básica</h1>
 
-<div id="registro">
-    <h2>Registro</h2>
-    <input id="correo" placeholder="Correo"><br>
-    <input id="usuario" placeholder="Apodo"><br>
-    <input id="codigo" placeholder="Código 3 letras"><br>
-    <input id="password" type="password" placeholder="Contraseña"><br>
-    <button onclick="registrar()">Registrarse</button>
-</div>
-
 <div id="login">
-    <h2>Login</h2>
+    <h2>Login (simple)</h2>
     <input id="loginUser" placeholder="Usuario"><br>
-    <input id="loginPass" type="password" placeholder="Contraseña"><br>
     <button onclick="login()">Entrar</button>
 </div>
 
@@ -56,73 +46,56 @@ input, button {
 
     <h3>Foro</h3>
     <div id="foro"></div>
-
-    <h3>🏆 Top Usuarios</h3>
-    <div id="top"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
-let posts = JSON.parse(localStorage.getItem("posts")) || [];
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  projectId: "TU_PROJECT_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 let actual = null;
 
-function registrar() {
-    let user = {
-        correo: correo.value,
-        usuario: usuario.value,
-        codigo: codigo.value,
-        password: password.value,
-        puntos: 0
-    };
+/* LOGIN SIMPLE */
+window.login = function () {
+    actual = loginUser.value;
 
-    usuarios.push(user);
-    localStorage.setItem("usuarios", JSON.stringify(usuarios));
-    alert("Registrado!");
-}
-
-function login() {
-    let u = usuarios.find(x => x.usuario == loginUser.value && x.password == loginPass.value);
-    
-    if (u) {
-        actual = u;
-        document.getElementById("app").style.display = "block";
-        bienvenida.innerText = "Bienvenido " + actual.usuario;
-        cargar();
-    } else {
-        alert("Error");
-    }
-}
-
-function publicar() {
-    let post = {
-        user: actual.usuario,
-        texto: mensaje.value
-    };
-
-    posts.push(post);
-    actual.puntos += 5;
-
-    localStorage.setItem("posts", JSON.stringify(posts));
-    localStorage.setItem("usuarios", JSON.stringify(usuarios));
+    document.getElementById("app").style.display = "block";
+    bienvenida.innerText = "Bienvenido " + actual;
 
     cargar();
-}
+};
 
-function cargar() {
+/* PUBLICAR EN FIREBASE */
+window.publicar = async function () {
+    await addDoc(collection(db, "posts"), {
+        user: actual,
+        texto: mensaje.value
+    });
+
+    mensaje.value = "";
+    cargar();
+};
+
+/* CARGAR POSTS */
+async function cargar() {
     foro.innerHTML = "";
-    posts.forEach(p => {
+
+    const querySnapshot = await getDocs(collection(db, "posts"));
+
+    querySnapshot.forEach((doc) => {
+        const p = doc.data();
         foro.innerHTML += `<div class="post"><b>${p.user}</b>: ${p.texto}</div>`;
     });
-
-    let ranking = usuarios.sort((a,b) => b.puntos - a.puntos);
-
-    top.innerHTML = "";
-    ranking.forEach(u => {
-        top.innerHTML += `<div>${u.usuario} - ${u.puntos} pts</div>`;
-    });
 }
-
 </script>
 
 </body>
